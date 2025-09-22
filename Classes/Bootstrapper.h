@@ -5,6 +5,7 @@
 #include "cocos2d.h"
 #include <vector>
 
+
 class Bootstrapper : public cocos2d::Scene
 {
 public:
@@ -16,10 +17,10 @@ public:
 	CREATE_FUNC(Bootstrapper);
 
 private:
-	Battlefield* _battlefield;
+	std::unique_ptr<Battlefield> _battlefield;
 	cocos2d::Camera* _camera;
 
 	int getTeam(const std::string& name);
-	std::map<int, std::vector<cocos2d::Vec3>> getTeamSpawnPoints(cocos2d::Node* node);
+	std::unordered_map<int, std::vector<cocos2d::Vec3>> getTeamSpawnPoints(cocos2d::Node* node);
 	std::vector<CharacterView> getCharacterViews();
 };

@@ -7,5 +7,5 @@ class Character;
 class TargetLocator
 {
 public:
-	virtual Character* getNearestAliveTarget(Character* character) = 0;
+	virtual std::shared_ptr<Character> getNearestAliveTarget(const std::shared_ptr<Character>& character) = 0;
 };

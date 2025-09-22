@@ -4,7 +4,7 @@
 
 #include <cocos2d.h>
 
-bool BulletView::init(Weapon* weapon, Character* target, bool hit)
+bool BulletView::init(std::weak_ptr<Weapon> weapon, std::shared_ptr<Character> target, bool hit)
 {
 	_weapon = weapon;
 	_target = target;
@@ -17,33 +17,47 @@ bool BulletView::init(Weapon* weapon, Character* target, bool hit)
 
 void BulletView::update(float deltaTime)
 {
-	WeaponDescriptor* weaponDescriptor = _weapon->descriptor;
-	cocos2d::Vec3 targetPosition = _target->getPosition() + cocos2d::Vec3(0, 2, 0);
-	cocos2d::Vec3 direction = targetPosition - this->getPosition3D();
-	direction.normalize();
-	cocos2d::Vec3 newPosition = this->getPosition3D() + direction * weaponDescriptor->muzzleVelocity * deltaTime * 10;
-	this->setPosition3D(newPosition);
-	float distance = targetPosition.distance(this->getPosition3D());
-	if (distance < 10)
-	{
-		if (_hit)
-		{
-			CharacterDescriptor* targetDescriptor = _target->descriptor;
-			float damage = weaponDescriptor->damage;
-			if (_target->armor > 0)
-			{
-				_target->armor -= damage;
-			}
-			else if (_target->health > 0)
-			{
-				_target->health -= damage;
-			}
-			if (_target->armor <= 0 && _target->health <= 0)
-			{
-				_target->runAnimation("objects/Death.c3b", false);
-			}
-		}
+	auto weaponShared = _weapon.lock();
+    if (!weaponShared)
+    {
+		CCLOG("BulletView::update. Pointer to weapon is nullptr.");
+        this->removeFromParentAndCleanup(true);
+        return;
+    }
 
-		this->removeFromParentAndCleanup(true);
+	const WeaponDescriptor& weaponDescriptor = weaponShared->descriptor;
+	if (auto targetShared = _target.lock())
+	{
+		cocos2d::Vec3 targetPosition = targetShared->getPosition() + cocos2d::Vec3(0, 2, 0);
+		cocos2d::Vec3 direction = targetPosition - this->getPosition3D();
+		direction.normalize();
+		cocos2d::Vec3 newPosition = this->getPosition3D() + direction * weaponDescriptor.muzzleVelocity * deltaTime * 10;
+		this->setPosition3D(newPosition);
+		float distance = targetPosition.distance(this->getPosition3D());
+		if (distance < 10)
+		{
+			if (_hit)
+			{
+				float damage = weaponDescriptor.damage;
+				if (targetShared->armor > 0)
+				{
+					targetShared->armor -= damage;
+				}
+				else if (targetShared->health > 0)
+				{
+					targetShared->health -= damage;
+				}
+				if (!targetShared->isAlive())
+				{
+					targetShared->runAnimation("objects/Death.c3b", false);
+				}
+			}
+
+			this->removeFromParentAndCleanup(true);
+		}
+	}
+	else
+	{
+		CCLOG("BulletView::update. _target is expired.");
 	}
 }

@@ -4,20 +4,21 @@
 #include "Models/Character/Character.h"
 
 class Character;
-class Weapon
+class Weapon : public std::enable_shared_from_this<Weapon>
 {
 public:
-	Weapon(WeaponDescriptor* descriptor, cocos2d::Sprite3D* owner, cocos2d::Node* root);
+	Weapon(const WeaponDescriptor& descriptor, cocos2d::Sprite3D* owner, cocos2d::Node* root);
 
-	WeaponDescriptor* descriptor;
+	WeaponDescriptor descriptor;
 
-	bool hasAmmo() const;
-	bool isReady() const;
+	bool hasAmmo() const noexcept;
+	bool isReady() const noexcept;
 
 	void reload();
 	void update(float deltaTime);
-	void fire(Character* character, bool hit);
+	void fire(std::shared_ptr<Character> character, bool hit);
 
+private:
 	int _ammo;
 	bool _ready;
 	float _time;

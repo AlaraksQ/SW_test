@@ -3,10 +3,10 @@
 class BulletView : public cocos2d::Node
 {
 public:
-	bool init(Weapon* weapon, Character* target, bool hit);
+	bool init(std::weak_ptr<Weapon> weapon, std::shared_ptr<Character> target, bool hit);
 	void update(float deltaTime);
 
-	static BulletView* create(Weapon* weapon, Character* target, bool hit)
+	static BulletView* create(std::weak_ptr<Weapon> weapon, std::shared_ptr<Character> target, bool hit)
 	{
 		BulletView* pRet = new (std::nothrow) BulletView();
 		if (pRet && pRet->init(weapon, target, hit))
@@ -23,7 +23,7 @@ public:
 	}
 
 private:
-	Weapon* _weapon;
-	Character* _target;
+	std::weak_ptr<Weapon> _weapon;
+	std::weak_ptr<Character> _target;
 	bool _hit;
 };

@@ -5,27 +5,26 @@
 
 USING_NS_CC;
 
-Weapon::Weapon(WeaponDescriptor* weapon, cocos2d::Sprite3D* owner, cocos2d::Node* root)
+Weapon::Weapon(const WeaponDescriptor& descriptor, cocos2d::Sprite3D* owner, cocos2d::Node* root) 
+	: descriptor(descriptor), _owner(owner), _root(root), _ammo(descriptor.clipSize)
 {
-	descriptor = weapon;
-	_owner = owner;
-	_root = root;
-	_ammo = descriptor->clipSize;
+	_ready = true;
+	_time = 0.0f;
 }
 
-bool Weapon::hasAmmo() const
+bool Weapon::hasAmmo() const noexcept
 {
 	return _ammo > 0;
 }
 
-bool Weapon::isReady() const
+bool Weapon::isReady() const noexcept
 {
 	return _ready;
 }
 
 void Weapon::reload()
 {
-	_ammo = descriptor->clipSize;
+	_ammo = descriptor.clipSize;
 }
 
 void Weapon::update(float deltaTime)
@@ -43,12 +42,12 @@ void Weapon::update(float deltaTime)
 	}
 }
 
-void Weapon::fire(Character* character, bool hit)
+void Weapon::fire(std::shared_ptr<Character> character, bool hit)
 {
 	if (_ammo > 0)
 	{
 		_ammo -= 1;
-		_time = 1.0f / descriptor->fireRate;
+		_time = 1.0f / descriptor.fireRate;
 		_ready = false;
 
 		Skeleton3D* skeleton = _owner->getSkeleton();
@@ -58,7 +57,7 @@ void Weapon::fire(Character* character, bool hit)
 		worldMat.transformPoint(&worldPosition);
 		Vec3 position = _owner->getPosition3D() + worldPosition * _owner->getScale();
 		Sprite3D* view = Sprite3D::create("objects/bullet.c3b", "objects/bullet.png");
-		BulletView* bullet = BulletView::create(this, character, hit);
+		BulletView* bullet = BulletView::create(shared_from_this(), character, hit);
 
 		bullet->addChild(view);
 		bullet->setPosition3D(position);

@@ -8,18 +8,18 @@ USING_NS_CC;
 
 Character::Character(
 	cocos2d::Sprite3D* view,
-	CharacterDescriptor* character,
-	Weapon* weapon,
+	const CharacterDescriptor& character,
+	std::shared_ptr<Weapon> weapon,
 	TargetLocator* targetLocator)
+		: descriptor(character), _time(0.0f)
 {
 	_weapon = weapon;
 	_targetLocator = targetLocator;
 	_state = State::Idle;
 
 	Sprite3d = view;
-	descriptor = character;
-	health = descriptor->maxHealth;
-	armor = descriptor->maxArmor;
+	health = descriptor.maxHealth;
+	armor = descriptor.maxArmor;
 }
 
 bool Character::isAlive() const
@@ -32,23 +32,27 @@ cocos2d::Vec3 Character::getPosition() const
 	return Sprite3d->getPosition3D();
 }
 
+//TODO make if (_time > 0) _time -= deltaTime; and remove according code in every case
 void Character::update(float deltaTime)
 {
 	if (!isAlive())
 		return;
+
+	auto target = _currentTarget.lock();
 
 	switch (_state)
 	{
 		case State::Idle:
 			runAnimation("objects/Idle.c3b", true);
 
-			_currentTarget = _targetLocator->getNearestAliveTarget(this);
-			if (_currentTarget != nullptr)
+			_currentTarget = _targetLocator->getNearestAliveTarget(shared_from_this());
+			target = _currentTarget.lock();
+			if (!_currentTarget.expired())
 			{
 				_state = State::Aiming;
-				_time = descriptor->aimTime;
+				_time = descriptor.aimTime;
 
-				cocos2d::Vec3 direction = _currentTarget->getPosition() - this->getPosition();
+				cocos2d::Vec3 direction = target->getPosition() - this->getPosition();
 				direction.normalize();
 				float rotationY = CC_RADIANS_TO_DEGREES(atan2(direction.x, direction.z));
 				cocos2d::Vec3 rotation = cocos2d::Vec3(0, rotationY, 0);
@@ -56,9 +60,8 @@ void Character::update(float deltaTime)
 			}
 			break;
 		case State::Aiming:
-			runAnimation("objects/Aiming.c3b", true);
-
-			if (_currentTarget != nullptr && _currentTarget->isAlive())
+			runAnimation("objects/Aiming.c3b", true);	
+			if (target && target->isAlive())
 			{
 				if (_time > 0)
 				{
@@ -77,17 +80,17 @@ void Character::update(float deltaTime)
 			}
 			break;
 		case State::Shooting:
-			if (_currentTarget != nullptr && _currentTarget->isAlive())
+			if (target != nullptr && target->isAlive())
 			{
 				if (_weapon->hasAmmo())
 				{
 					if (_weapon->isReady())
 					{
 						float random = CCRANDOM_0_1();
-						bool hit = random <= descriptor->accuracy
-								   && random <= _weapon->descriptor->accuracy
-								   && random >= _currentTarget->descriptor->dexterity;
-						_weapon->fire(_currentTarget, hit);
+						bool hit = random <= descriptor.accuracy
+								   && random <= _weapon->descriptor.accuracy
+								   && random >= target->descriptor.dexterity;
+						_weapon->fire(target, hit);
 						runAnimation("objects/Shooting.c3b", false, true);
 					}
 					else
@@ -98,7 +101,7 @@ void Character::update(float deltaTime)
 				else
 				{
 					_state = State::Reloading;
-					_time = _weapon->descriptor->reloadTime;
+					_time = _weapon->descriptor.reloadTime;
 				}
 			}
 			else
@@ -115,7 +118,7 @@ void Character::update(float deltaTime)
 			}
 			else
 			{
-				if (_currentTarget != nullptr && _currentTarget->isAlive())
+				if (target && target->isAlive())
 				{
 					_state = State::Shooting;
 				}
@@ -128,10 +131,14 @@ void Character::update(float deltaTime)
 				_time = 0;
 			}
 			break;
+		default:
+			_state = State::Idle;
+			break;
 	}
 }
 
-void Character::runAnimation(std::string name, bool repeat, bool force)
+// Note! Check properly animations. Revert animations cache if something wrong
+void Character::runAnimation(const std::string& name, bool repeat, bool force)
 {
 	if (_currentAnimation == name && !force)
 	{
@@ -140,8 +147,39 @@ void Character::runAnimation(std::string name, bool repeat, bool force)
 
 	Sprite3d->stopAllActions();
 
-	Animation3D* animation = Animation3D::create(name);
-	Animate3D* animate = Animate3D::create(animation);
+	cocos2d::RefPtr<Animate3D> animate;
+
+	auto it = _animationCache.find(name);
+	if (it != _animationCache.end())
+	{
+		animate = it->second;
+	}
+	else
+	{
+		Animation3D* animation = Animation3D::create(name);
+
+		if (!animation)
+		{
+			CCLOG("Animation3D not found: %s", name.c_str());
+			return;
+		}
+
+		Animate3D* rawAnimate = Animate3D::create(animation);
+		if (!rawAnimate)
+		{
+			CCLOG("Animate3D creation failed: %s", name.c_str());
+			return;
+		}
+
+		animate = cocos2d::RefPtr<Animate3D>(rawAnimate);
+		_animationCache[name] = animate;
+	}
+
+	if (!animate)
+	{
+		CCLOG("Animate3D is nullptr for %s", name.c_str());
+		return;
+	}
 
 	if (repeat)
 	{
