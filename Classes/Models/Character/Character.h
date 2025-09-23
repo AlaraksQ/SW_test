@@ -31,6 +31,9 @@ public:
 	float health;
 	float armor;
 
+	std::function<void()> onDeath;
+
+	cocos2d::Sprite3D* getSprite3D() const noexcept;
 	bool isAlive() const;
 	void update(float deltaTime);
 	void runAnimation(const std::string& name, bool repeat, bool force = false);

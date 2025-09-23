@@ -14,12 +14,14 @@ public:
 
 	void update(float delta);
 	void start(std::vector<CharacterView> characters);
+	void startBattle();
 
 private:
 	bool _paused;
 	cocos2d::Node* _root;
 	std::unordered_map<int, std::vector<cocos2d::Vec3>> _spawnPositionsByTeam;
 	std::map<int, std::vector<std::shared_ptr<Character>>> _charactersByTeam;
+	std::vector<CharacterView> _prefabs;
 
 	std::shared_ptr<Character> getNearestAliveTarget(const std::shared_ptr<Character>& character) override;
 	int getTeam(const Character* target);
@@ -27,4 +29,6 @@ private:
 		const CharacterView& prefab,
 		Battlefield& battlefield,
 		const cocos2d::Vec3& position);
+	void resetBattlefield();
+	int getWinnerTeam() const;
 };

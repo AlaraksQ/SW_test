@@ -22,6 +22,11 @@ Character::Character(
 	armor = descriptor.maxArmor;
 }
 
+cocos2d::Sprite3D* Character::getSprite3D() const noexcept
+{
+	return Sprite3d;
+}
+
 bool Character::isAlive() const
 {
 	return health > 0 || armor > 0;

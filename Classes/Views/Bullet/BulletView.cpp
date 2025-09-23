@@ -50,6 +50,10 @@ void BulletView::update(float deltaTime)
 				if (!targetShared->isAlive())
 				{
 					targetShared->runAnimation("objects/Death.c3b", false);
+					if (targetShared->onDeath)
+					{
+						targetShared->onDeath();
+					}
 				}
 			}
 
