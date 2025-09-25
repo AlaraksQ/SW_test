@@ -32,6 +32,7 @@ public:
 	float armor;
 
 	std::function<void()> onDeath;
+	std::function<void()> onTakeDamage;
 
 	cocos2d::Sprite3D* getSprite3D() const noexcept;
 	bool isAlive() const;

@@ -30,6 +30,53 @@ bool Bootstrapper::init()
 	camera->lookAt(Vec3(0, 0, 0));
 	camera->setCameraMask(1);
 
+	// Debug purposes. Unlock camera rotation
+	/*_camera = camera;
+
+	auto mouseListener = EventListenerMouse::create();
+	mouseListener->onMouseDown = [this](EventMouse* event) {
+		if (event->getMouseButton() == EventMouse::MouseButton::BUTTON_LEFT) {
+			_dragging = true;
+			_prevCursor = Vec2(event->getCursorX(), event->getCursorY());
+		}
+	};
+
+	mouseListener->onMouseUp = [this](EventMouse* event) {
+		if (event->getMouseButton() == EventMouse::MouseButton::BUTTON_LEFT) {
+			_dragging = false;
+		}
+	};
+
+	mouseListener->onMouseMove = [this](EventMouse* event) {
+		if (_dragging) {
+			Vec2 cur(event->getCursorX(), event->getCursorY());
+			Vec2 delta = cur - _prevCursor;
+			_prevCursor = cur;
+
+			float sens = 0.3f;
+
+			_camYaw += delta.x * sens;
+			_camPitch += delta.y * sens;
+
+			// ограничиваем pitch, чтобы камера не переворачивалась
+			_camPitch = std::max(-80.0f, std::min(80.0f, _camPitch));
+
+			// переводим углы в радианы
+			float yawRad = CC_DEGREES_TO_RADIANS(_camYaw);
+			float pitchRad = CC_DEGREES_TO_RADIANS(_camPitch);
+
+			// вычисляем позицию камеры в сферических координатах
+			float x = _camDistance * cosf(pitchRad) * sinf(yawRad);
+			float y = _camDistance * sinf(pitchRad);
+			float z = _camDistance * cosf(pitchRad) * cosf(yawRad);
+
+			_camera->setPosition3D(Vec3(x, y, z));
+			_camera->lookAt(Vec3(0, 0, 0));
+		}
+	};
+
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(mouseListener, this);*/
+
 	Sprite3D* sprite3d = Sprite3D::create("ScorewarriorCS/res/environment_MESH.c3b", "ScorewarriorCS/res/environment_tex.png");
 	sprite3d->setPosition3D(Vec3(0, 0, 0));
 	sprite3d->setScale(0.25);

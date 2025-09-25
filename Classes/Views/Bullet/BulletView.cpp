@@ -41,12 +41,18 @@ void BulletView::update(float deltaTime)
 				float damage = weaponDescriptor.damage;
 				if (targetShared->armor > 0)
 				{
-					targetShared->armor -= damage;
+					targetShared->armor = std::max(0.0f, targetShared->armor - damage);
 				}
 				else if (targetShared->health > 0)
 				{
 					targetShared->health -= damage;
 				}
+
+				if (targetShared->onTakeDamage)
+				{
+					targetShared->onTakeDamage();
+				}
+
 				if (!targetShared->isAlive())
 				{
 					targetShared->runAnimation("objects/Death.c3b", false);

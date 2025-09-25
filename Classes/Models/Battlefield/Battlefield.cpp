@@ -2,6 +2,7 @@
 #include "UI/GameUI.h"
 #include "Models/Character/Character.h"
 #include "Views/Character/CharacterView.h"
+#include "UI/TeamHealthHUD.h"
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
 
@@ -15,27 +16,9 @@ Battlefield::Battlefield(cocos2d::Node* root, std::unordered_map<int, std::vecto
 
 void Battlefield::start(std::vector<CharacterView> prefabs)
 {
-	auto ui = GameUI::create();
-	ui->setName("GameUI");
-
-	auto winSize = cocos2d::Director::getInstance()->getWinSize();
-	ui->setContentSize(winSize);
-
-	_root->getScene()->addChild(ui, 1000);
-
 	_prefabs = std::move(prefabs);
 
-	ui->onContinue = [this, ui]()
-	{
-		ui->setVisible(false);
-		this->startBattle();
-	};
-
-	ui->onRestart = [this, ui]()
-	{
-		this->resetBattlefield();
-		ui->showContinue();
-	};
+	initUI();
 }
 
 void Battlefield::startBattle()
@@ -62,6 +45,12 @@ void Battlefield::startBattle()
 			i++;
 		}
 		_charactersByTeam[positionsPair.first] = characters;
+	}
+
+	if (_hud)
+	{
+		_hud->setTeams(_charactersByTeam[2], _charactersByTeam[1]);
+		_hud->setVisible(true);
 	}
 }
 
@@ -104,10 +93,45 @@ std::shared_ptr<Character> Battlefield::createCharacterAt(
 		}
 	};
 
+	character->onTakeDamage = [this]() {
+		_hud->updateHUD();
+	};
+
 	sprite3d->setPosition3D(position);
 	sprite3d->setScale(0.3);
 
 	return character;
+}
+
+void Battlefield::initUI()
+{
+	Size winSize = Director::getInstance()->getWinSize();
+
+	// Buttons
+	auto ui = GameUI::create();
+	ui->setName("GameUI");
+	ui->setContentSize(winSize);
+	_root->getScene()->addChild(ui);
+
+	ui->onContinue = [this, ui]()
+	{
+		ui->setVisible(false);
+		this->startBattle();
+	};
+
+	ui->onRestart = [this, ui]()
+	{
+		this->resetBattlefield();
+		ui->showContinue();
+	};
+
+	// HP and armor bars
+	auto hud = TeamHealthHUD::create();
+	hud->setName("TeamHealthHUD");
+	_root->getScene()->addChild(hud);
+
+	_hud = hud;
+	_hud->setVisible(false);
 }
 
 void Battlefield::resetBattlefield()
@@ -127,6 +151,7 @@ void Battlefield::resetBattlefield()
 		}
 	}
 
+	_hud->setVisible(false);
 	_charactersByTeam.clear();
 }
 

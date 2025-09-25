@@ -23,4 +23,11 @@ private:
 	int getTeam(const std::string& name);
 	std::unordered_map<int, std::vector<cocos2d::Vec3>> getTeamSpawnPoints(cocos2d::Node* node);
 	std::vector<CharacterView> getCharacterViews();
+
+	// For cam unlock rotation
+	/*bool _dragging = false;
+	cocos2d::Vec2 _prevCursor;
+	float _camYaw = 0.0f;
+	float _camPitch = 20.0f;
+	float _camDistance = 600.0f;*/
 };
