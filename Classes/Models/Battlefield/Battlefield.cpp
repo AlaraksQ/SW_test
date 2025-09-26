@@ -3,6 +3,8 @@
 #include "Models/Character/Character.h"
 #include "Views/Character/CharacterView.h"
 #include "UI/TeamHealthHUD.h"
+#include "Models/Modifiers/Modifier.h"
+#include "Models/Modifiers/ModifiersFactory.h"
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
 
@@ -49,9 +51,13 @@ void Battlefield::startBattle()
 
 	if (_hud)
 	{
+		_hud->resetHUD();
 		_hud->setTeams(_charactersByTeam[2], _charactersByTeam[1]);
 		_hud->setVisible(true);
+		_hud->updateHUD();
 	}
+
+	showModifiersOnStart();
 }
 
 void Battlefield::update(float delta)
@@ -74,8 +80,12 @@ std::shared_ptr<Character> Battlefield::createCharacterAt(
 	const cocos2d::Vec3& position)
 {
 	Sprite3D* sprite3d = Sprite3D::create(prefab.model, prefab.texture);
+
 	auto weapon = std::make_shared<Weapon>(prefab.weaponDescriptor, sprite3d, _root);
+	addWeaponModifiers(weapon);
+
 	auto character = std::make_shared<Character>(sprite3d, prefab.characterDescriptor, weapon, &battlefield);
+	addCharacterModifiers(character);
 
 	_root->addChild(sprite3d);
 
@@ -101,6 +111,42 @@ std::shared_ptr<Character> Battlefield::createCharacterAt(
 	sprite3d->setScale(0.3);
 
 	return character;
+}
+
+void Battlefield::addCharacterModifiers(std::shared_ptr<Character> character)
+{
+	std::vector<std::shared_ptr<Modifier>> characterModifiers;
+		
+	while (characterModifiers.size() < 3)
+	{
+		auto mod = ModifierFactory::getRandomCharacterModifier();
+		characterModifiers.push_back(mod);
+	}
+
+	for (auto& mod : characterModifiers)
+	{
+		mod->apply(character->descriptor);
+		character->addModifierDescription(mod->getDescription());
+	}
+
+	character->updateCharacterHealthAndArmor();
+}
+
+void Battlefield::addWeaponModifiers(std::shared_ptr<Weapon> weapon)
+{
+	std::vector<std::shared_ptr<Modifier>> weaponModifiers;
+
+	while (weaponModifiers.size() < 2)
+	{
+		auto mod = ModifierFactory::getRandomWeaponModifier();
+		weaponModifiers.push_back(mod);
+	}
+
+	for (auto& mod : weaponModifiers)
+	{
+		mod->apply(weapon->descriptor);
+		weapon->addModifierDescription(mod->getDescription());
+	}
 }
 
 void Battlefield::initUI()
@@ -153,6 +199,72 @@ void Battlefield::resetBattlefield()
 
 	_hud->setVisible(false);
 	_charactersByTeam.clear();
+}
+
+void Battlefield::showModifiersOnStart()
+{
+	auto camera = getMainCamera();
+	if (!camera)
+	{
+		CCLOG("Main camera not found!");
+		return;
+	}
+
+	auto scene = Director::getInstance()->getRunningScene();
+	if (!scene)
+		return;
+
+	for (auto& charactersPair : _charactersByTeam)
+	{
+		for (const auto& character : charactersPair.second)
+		{
+			const auto modifiersDescription = character->getModifiersDescription();
+			if (modifiersDescription.empty() || !character->getSprite3D())
+				continue;
+
+			auto label = Label::createWithTTF(modifiersDescription, "fonts/arial.ttf", 10);
+			label->setColor(Color3B::WHITE);
+			label->setAnchorPoint(Vec2(0.5f, 0.0f));
+
+			auto billboard = BillBoard::create();
+			billboard->setMode(BillBoard::Mode::VIEW_PLANE_ORIENTED);
+			billboard->addChild(label);
+			label->setPosition3D(Vec3(0, 0, 0));
+
+			Vec3 charPos = character->getSprite3D()->getPosition3D();
+			billboard->setPosition3D(charPos + Vec3(0, 50, 0));
+
+			scene->addChild(billboard, 900);
+
+			billboard->runAction(Sequence::create(
+				DelayTime::create(10.0f),
+				FadeOut::create(0.5f),
+				RemoveSelf::create(),
+				nullptr
+			));
+		}
+	}
+}
+
+Camera* Battlefield::getMainCamera() const
+{
+	auto scene = Director::getInstance()->getRunningScene();
+	if (!scene)
+	{
+		CCLOG("Battlefield::getMainCamera(). No running scene!");
+		return nullptr;
+	}
+
+	for (auto child : scene->getChildren())
+	{
+		Camera* camera = dynamic_cast<Camera*>(child);
+		if (camera && camera->getCameraMask() == 1)
+		{
+			return camera;
+		}
+	}
+
+	return nullptr;
 }
 
 int Battlefield::getWinnerTeam() const

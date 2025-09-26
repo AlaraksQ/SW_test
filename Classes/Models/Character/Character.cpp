@@ -85,7 +85,7 @@ void Character::update(float deltaTime)
 			}
 			break;
 		case State::Shooting:
-			if (target != nullptr && target->isAlive())
+			if (target && target->isAlive())
 			{
 				if (_weapon->hasAmmo())
 				{
@@ -196,4 +196,25 @@ void Character::runAnimation(const std::string& name, bool repeat, bool force)
 	}
 
 	_currentAnimation = name;
+}
+
+void Character::addModifierDescription(std::string desc)
+{
+	modifiersDesc.push_back(desc);
+}
+
+std::string Character::getModifiersDescription() const
+{
+	std::string result;
+	for (const auto desc : modifiersDesc)
+	{
+		result += desc + "\n";
+	}
+	return result;
+}
+
+void Character::updateCharacterHealthAndArmor()
+{
+	health = descriptor.maxHealth;
+	armor = descriptor.maxArmor;
 }

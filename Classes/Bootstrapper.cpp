@@ -150,7 +150,7 @@ std::vector<CharacterView> Bootstrapper::getCharacterViews()
 		{
 			"objects/Soldier.c3b",
 			"objects/Soldier_tex_1.png",
-			{0.8, 0.1, 100, 200, 2},
+			{0.8, 0.1, 100, 100, 2},
 			{20, 0.5, 1, 2, 20, 4}
 		});
 	characterViews.push_back(
@@ -164,7 +164,7 @@ std::vector<CharacterView> Bootstrapper::getCharacterViews()
 		{
 			"objects/Soldier.c3b",
 			"objects/Soldier_tex_3.png",
-			{0.95, 0.1, 100, 150, 4},
+			{0.95, 0.1, 100, 120, 4},
 			{12, 0.85, 0.5, 4, 60, 6}
 		});
 	characterViews.push_back(

@@ -1,5 +1,5 @@
 #include "Weapon.h"
-
+#include "Models/Character/Character.h"
 #include "Views/Bullet/BulletView.h"
 #include "cocos2d.h"
 
@@ -66,4 +66,19 @@ void Weapon::fire(std::shared_ptr<Character> character, bool hit)
 
 		_root->addChild(bullet);
 	}
+}
+
+void Weapon::addModifierDescription(std::string desc)
+{
+	modifiersDesc.push_back(desc);
+}
+
+std::string Weapon::getModifiersDescription() const
+{
+	std::string result;
+	for (const auto& desc : modifiersDesc)
+	{
+		result += desc + "\n";
+	}
+	return result;
 }

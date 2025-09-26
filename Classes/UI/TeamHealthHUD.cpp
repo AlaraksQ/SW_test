@@ -26,9 +26,10 @@ void TeamHealthHUD::setTeams(const std::vector<std::shared_ptr<Character>>& alli
 
     for (size_t i = 0; i < allies.size(); ++i)
     {
-        auto bars = createHealthBars(Vec2(startX, startY - i * offsetY),
-            Color3B::GREEN, Color3B::YELLOW);
+        CharacterBars bars;
         bars.character = allies[i];
+        createHealthBars(bars,Vec2(startX, startY - i * offsetY),
+            Color3B::GREEN, Color3B::YELLOW);
         _allyBars.push_back(bars);
     }
 
@@ -36,52 +37,85 @@ void TeamHealthHUD::setTeams(const std::vector<std::shared_ptr<Character>>& alli
 
     for (size_t i = 0; i < enemies.size(); ++i)
     {
-        auto bars = createHealthBars(Vec2(startX, startY - i * offsetY),
-            Color3B::RED, Color3B::YELLOW);
+        CharacterBars bars;
         bars.character = enemies[i];
+       createHealthBars(bars, Vec2(startX, startY - i * offsetY),
+            Color3B::RED, Color3B::YELLOW);
         _enemyBars.push_back(bars);
     }
 }
 
-TeamHealthHUD::CharacterBars TeamHealthHUD::createHealthBars(
+void TeamHealthHUD::createHealthBars(
+    CharacterBars& bars,
     const Vec2& pos,
     const Color3B& healthColor,
     const Color3B& armorColor)
 {
-    CharacterBars bars;
-    float borderSize = 1.0f;
+    const auto character = bars.character.lock();
+    if (!character)
+    {
+        CCLOGWARN("Can't create Health and Armor bars for character. Character not set.");
+        return;
+    }
 
-    auto hpBg = Sprite::create("ui/TEX_health_bar.png");
-    hpBg->setAnchorPoint(Vec2::ANCHOR_TOP_LEFT);
-    hpBg->setPosition(pos);
-    this->addChild(hpBg);
+    const float hpHeight = 10.0f;
+    const float armorHeight = 5.0f;
+    const float spacing = 2.0f;
+    const float healthPerDivision = 5.0f;
 
-    // Получаем точный размер и origin фона
-    Rect hpRect = hpBg->getBoundingBox();
+    auto container = Node::create();
+    container->setPosition(pos);
+    this->addChild(container);
 
-    auto hpFill = LayerColor::create(Color4B(healthColor), hpRect.size.width - 2 * borderSize, hpRect.size.height - 2 * borderSize);
-    hpFill->setAnchorPoint(Vec2::ANCHOR_TOP_LEFT);
-    hpFill->setPosition(hpRect.origin + Vec2(borderSize, borderSize)); // выравниваем по верхнему левому углу спрайта
-    this->addChild(hpFill);
+    // --- HP ---
+    const auto maxHp = character->descriptor.maxHealth;
+    auto width = maxHp;
+    auto hpFill = LayerColor::create(Color4B(healthColor), width, hpHeight);
+    hpFill->setAnchorPoint(Vec2::ANCHOR_BOTTOM_LEFT);
+    hpFill->setPosition(Vec2(0, 0));
+    container->addChild(hpFill);
     bars.healthBar = hpFill;
-    bars.healthBg = hpBg;
 
-    // Armor аналогично
-    Vec2 armorPos = pos + Vec2(0, hpRect.size.height);
-    auto armorBg = Sprite::create("ui/TEX_armor_bar.png");
-    armorBg->setAnchorPoint(Vec2::ANCHOR_TOP_LEFT);
-    armorBg->setPosition(armorPos);
-    this->addChild(armorBg);
+    // --- HP border ---
+    auto hpBorder = DrawNode::create();
+    Vec2 hpRect[4] = {
+        Vec2(0, 0),
+        Vec2(width, 0),
+        Vec2(width, hpHeight),
+        Vec2(0, hpHeight)
+    };
+    hpBorder->drawPoly(hpRect, 4, true, Color4F::BLACK);
 
-    Rect armorRect = armorBg->getBoundingBox();
-    auto armorFill = LayerColor::create(Color4B(armorColor), armorRect.size.width - 2, armorRect.size.height - 2);
-    armorFill->setAnchorPoint(Vec2::ANCHOR_TOP_LEFT);
-    armorFill->setPosition(armorRect.origin + Vec2(borderSize, borderSize));
-    this->addChild(armorFill);
+    if (maxHp > 0)
+    {
+        for (float x = healthPerDivision; x < width; x += healthPerDivision)
+        {
+            hpBorder->drawLine(Vec2(x, 0), Vec2(x, hpHeight), Color4F::BLACK);
+        }
+    }
+
+    container->addChild(hpBorder, 1);
+
+    // --- Armor ---
+    width = character->descriptor.maxArmor;
+    auto armorFill = LayerColor::create(Color4B(armorColor), width, armorHeight);
+    armorFill->setAnchorPoint(Vec2::ANCHOR_BOTTOM_LEFT);
+    armorFill->setPosition(Vec2(0, hpHeight + spacing));
+    container->addChild(armorFill);
     bars.armorBar = armorFill;
-    bars.armorBg = armorBg;
 
-    return bars;
+    // --- Armor border ---
+    auto armorBorder = DrawNode::create();
+    Vec2 armorRect[4] = {
+        Vec2(0, hpHeight + spacing),
+        Vec2(width, hpHeight + spacing),
+        Vec2(width, hpHeight + spacing + armorHeight),
+        Vec2(0, hpHeight + spacing + armorHeight)
+    };
+    armorBorder->drawPoly(armorRect, 4, true, Color4F::BLACK);
+    container->addChild(armorBorder, 1);
+
+    bars.container = container;
 }
 
 void TeamHealthHUD::updateHUD()
@@ -101,10 +135,7 @@ void TeamHealthHUD::updateHUD()
                 }
                 else
                 {
-                    bars.healthBar->setVisible(false);
-                    bars.healthBg->setVisible(false);
-                    bars.armorBar->setVisible(false);
-                    bars.armorBg->setVisible(false);
+                    bars.container->setVisible(false);
                 }
             }
         }
@@ -112,4 +143,24 @@ void TeamHealthHUD::updateHUD()
 
     updateBars(_allyBars);
     updateBars(_enemyBars);
+}
+
+void TeamHealthHUD::resetHUD()
+{
+    auto resetBars = [](std::vector<CharacterBars>& barsList)
+    {
+        for (auto& bars : barsList)
+        {
+            if (bars.container)
+            {
+                bars.container->removeFromParent();
+                bars.container = nullptr;
+                bars.healthBar = nullptr;
+                bars.armorBar = nullptr;
+            }
+        }
+    };
+
+    resetBars(_allyBars);
+    resetBars(_enemyBars);
 }

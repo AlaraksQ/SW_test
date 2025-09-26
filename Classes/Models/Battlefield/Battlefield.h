@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Models/Character/Character.h"
+#include "Models/Weapon/Weapon.h"
 #include "TargetLocator.h"
 #include "Views/Character/CharacterView.h"
 #include "math/Vec3.h"
@@ -32,8 +33,12 @@ private:
 		const CharacterView& prefab,
 		Battlefield& battlefield,
 		const cocos2d::Vec3& position);
+	void addCharacterModifiers(std::shared_ptr<Character> character);
+	void addWeaponModifiers(std::shared_ptr<Weapon> weapon);
 	void initUI();
 	void startBattle();
 	void resetBattlefield();
+	void showModifiersOnStart();
+	cocos2d::Camera* Battlefield::getMainCamera() const;
 	int getWinnerTeam() const;
 };

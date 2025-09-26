@@ -15,21 +15,25 @@ public:
         const std::vector<std::shared_ptr<Character>>& enemies);
 
     void updateHUD();
+    void resetHUD();
 
 private:
     struct CharacterBars
     {
         cocos2d::LayerColor* healthBar = nullptr;
         cocos2d::LayerColor* armorBar = nullptr;
-        cocos2d::Sprite* healthBg;
-        cocos2d::Sprite* armorBg;
+        /*cocos2d::Sprite* healthBg;
+        cocos2d::Sprite* armorBg;*/
         std::weak_ptr<Character> character;
+        Node* container;
     };
 
     std::vector<CharacterBars> _allyBars;
     std::vector<CharacterBars> _enemyBars;
 
-    CharacterBars createHealthBars(const cocos2d::Vec2& pos,
+    void createHealthBars(
+        CharacterBars& bars,
+        const cocos2d::Vec2& pos,
         const cocos2d::Color3B& healthColor,
         const cocos2d::Color3B& armorColor
     );

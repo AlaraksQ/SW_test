@@ -6,8 +6,9 @@
 #include "Models/Weapon/Weapon.h"
 #include "cocos2d.h"
 #include <string>
+#include <vector>
+#include <memory>
 
-class Weapon;
 class Character : public std::enable_shared_from_this<Character>
 {
 public:
@@ -40,10 +41,16 @@ public:
 	void runAnimation(const std::string& name, bool repeat, bool force = false);
 	cocos2d::Vec3 getPosition() const;
 
+	void addModifierDescription(std::string desc);
+	std::string getModifiersDescription() const;
+	void updateCharacterHealthAndArmor();
+
 private:
 	std::shared_ptr<Weapon> _weapon;
 	std::weak_ptr<Character> _currentTarget;
 	TargetLocator* _targetLocator;
+
+	std::vector<std::string> modifiersDesc;
 
 	std::unordered_map<std::string, cocos2d::RefPtr<cocos2d::Animate3D>> _animationCache;
 
