@@ -26,6 +26,8 @@ private:
 	std::map<int, std::vector<std::shared_ptr<Character>>> _charactersByTeam;
 	std::vector<CharacterView> _prefabs;
 	TeamHealthHUD* _hud = nullptr;
+	int _characterModifiersAmount;
+	int _weaponModifiersAmount;
 
 	std::shared_ptr<Character> getNearestAliveTarget(const std::shared_ptr<Character>& character) override;
 	int getTeam(const Character* target);

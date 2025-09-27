@@ -14,6 +14,8 @@ Battlefield::Battlefield(cocos2d::Node* root, std::unordered_map<int, std::vecto
 	: _root(root), _spawnPositionsByTeam(std::move(map))
 {
 	_paused = true;
+	_characterModifiersAmount = 3;
+	_weaponModifiersAmount = 2;
 }
 
 void Battlefield::start(std::vector<CharacterView> prefabs)
@@ -117,7 +119,7 @@ void Battlefield::addCharacterModifiers(std::shared_ptr<Character> character)
 {
 	std::vector<std::shared_ptr<Modifier>> characterModifiers;
 		
-	while (characterModifiers.size() < 3)
+	while (characterModifiers.size() < _characterModifiersAmount)
 	{
 		auto mod = ModifierFactory::getRandomCharacterModifier();
 		characterModifiers.push_back(mod);
@@ -136,7 +138,7 @@ void Battlefield::addWeaponModifiers(std::shared_ptr<Weapon> weapon)
 {
 	std::vector<std::shared_ptr<Modifier>> weaponModifiers;
 
-	while (weaponModifiers.size() < 2)
+	while (weaponModifiers.size() < _weaponModifiersAmount)
 	{
 		auto mod = ModifierFactory::getRandomWeaponModifier();
 		weaponModifiers.push_back(mod);
